@@ -1,0 +1,24 @@
+flag-a:
+  variations:
+    var-a:
+      payload: "payload a"
+    var-b:
+      payload: "payload b"
+    var-c:
+      payload: "payload c"
+  targeting:
+    - query: key in ["1","2"]
+      percentage:
+        var-a: 100
+        var-b: 0
+        var-c: 0
+    - query: cohort in ["xy"]
+      percentage:
+        var-a: 0
+        var-b: 100
+        var-c: 0
+  defaultRule:
+    percentage:
+      var-a: 0
+      var-b: 0
+      var-c: 100

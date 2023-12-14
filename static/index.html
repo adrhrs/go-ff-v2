@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Flag Tool</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+</head>
+
+<body>
+
+
+    <div id="app" class="container mt-5">
+        <h1 class="mb-4">Feature Flag Tool</h1>
+        <hr>
+        <div class="row">
+            <div v-if="!isManageVariants" class="col-lg-6">
+                <h5><b>FLAGS</b></h5>
+                <div class="row">
+                    <div class="col-lg-8">
+                        <input placeholder="flag name" v-model="selectedFlag.name" type="text" class="form-control" />
+                    </div>
+                    <div class="col-lg-4">
+                        <button @click="addFlag" class="btn btn-primary">Create Flag</button>
+                    </div>
+                </div>
+            </div>
+            <div v-if="!isManageVariants" class="col-lg-6 mt-3">
+                <table class="table table-bordered table-stripped mt-3">
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(value, key) in flags" :key="key">
+                            <td>{{key}}</td>
+                            <td>
+                                <button @click="manageVariants(key)" class="btn btn-sm btn-success">Variants</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div v-if="isManageVariants" class="col-lg-12 mt-5">
+                <h5><b>VARIANTS</b></h5>
+                <div class="row">
+                    <div class="col-lg-6">
+                        <label>Selected Flag</label>
+                        <input placeholder="flag name" disabled v-model="selectedFlag.name" type="text" class="form-control" />
+
+                        <div class="row mt-3">
+                            <div class="col-lg-5">
+                                <input placeholder="key e.g. var-a" v-model="selectedVariant.key" type="text" class="form-control" />
+                                <button @click="saveVariant()" class="btn mt-3 btn-success">Save & Close</button>
+                            </div>
+                            <div class="col-lg-5">
+                                <input placeholder="payload e.g. payload a" v-model="selectedVariant.payload" type="text" class="form-control" />
+                            </div>
+                            <div class="col-lg-2">
+                                <button @click="addVariant()" class="btn mt-1 btn-primary">Add</button>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="col-lg-6 mt-3">
+                        <table class="table table-bordered table-stripped mt-3">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Variant Key</th>
+                                    <th scope="col">Payload</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(value, key) in flags[selectedFlag.name].variations" :key="key">
+                                    <td>{{key}}</td>
+                                    <td>{{value.payload}}</td>
+
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="isManageVariants" class="col-lg-12 mt-5">
+                <h5><b>RULE BASED ALLOCATION</b></h5>
+                <div class="row">
+                    <div class="col-lg-4">
+                        <input placeholder="key e.g. var-a" v-model="selectedRule.query" type="text" class="form-control" />
+                    </div>
+                    <div class="col-lg-8">
+                        <div v-for="(value, key) in flags[selectedFlag.name].variations" :key="key" class="row mb-3">
+                            <div class="col-lg-6">
+                                <input disabled v-model="key" class="form-control" />
+                            </div>
+                            <div class="col-lg-6">
+                                <input placeholder="percentage" type="number" v-model="selectedRule.percentage[key]" class="form-control" />
+                            </div>
+                        </div>
+                        <button @click="addRule()" class="btn mt-3 btn-primary pull-right">Save</button>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- Generated YAML section -->
+        <div class="mt-5">
+            <h2>Generated YAML:</h2>
+            <pre class="bg-light p-3">{{ generatedYAML }}</pre>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+    <!-- Vue.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- YAML library -->
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    selectedFlag: {
+                        name: "",
+                        variations: {},
+                        targeting: []
+                    },
+                    flags: {},
+                    isManageVariants: false,
+                    selectedVariant: {
+                        key: "",
+                        payload: ""
+                    },
+
+                    selectedRule: {
+                        query: "",
+                        percentage: {},
+                    }
+                };
+            },
+            computed: {
+                generatedYAML() {
+                    return jsyaml.dump(this.flags);
+                },
+            },
+            methods: {
+                addFlag() {
+                    this.$set(
+                        this.flags,
+                        this.selectedFlag.name, {
+                            variations: {},
+                            targeting: []
+                        }
+                    )
+                    this.resetFlagData()
+                },
+                resetFlagData() {
+                    this.selectedFlag = {
+                        name: "",
+                        variations: {},
+                        targeting: []
+                    }
+                },
+
+                resetVariantData() {
+                    this.selectedVariant = {
+                        key: "",
+                        payload: ""
+                    }
+                },
+
+                manageVariants(flagKey) {
+                    this.selectedFlag.name = flagKey
+                    this.isManageVariants = true
+                    this.resetVariantData()
+                },
+
+                saveVariant() {
+                    this.isManageVariants = false
+                    this.resetFlagData()
+                    this.resetVariantData()
+                },
+
+                addVariant() {
+                    this.$set(
+                        this.flags[this.selectedFlag.name].variations,
+                        this.selectedVariant.key, {
+                            payload: this.selectedVariant.payload
+                        }
+                    )
+                    this.resetVariantData()
+
+
+                },
+                addRule() {
+                    this.flags[this.selectedFlag.name].targeting.push(this.selectedRule)
+
+                }
+            },
+        });
+    </script>
+
+</body>
+
+</html>
