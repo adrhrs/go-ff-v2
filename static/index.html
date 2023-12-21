@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feature Flag Tool</title>
-
+    <link href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAACgr6AADy/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACIiAAAAAAAiIgAiAAAAAiIgEQIgAAACIiARAiAAACIAAAAAIgAAIiIiIiICAAAiIiIiIiIAACIiAiAiIgAAAiICICIgAAACIiIiIiAAAAAiIiIiAAAAAAAiIgAAAAAAAAAAAAAAAAAAAAAAAAD//wAA+B8AAOAHAADAAwAAwAMAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAMADAADAAwAA4AcAAPgfAAD//wAA"
+        rel="icon" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
 </head>
@@ -56,7 +57,7 @@
                         <div class="row mt-3">
                             <div class="col-lg-5">
                                 <input placeholder="key e.g. var-a" v-model="selectedVariant.key" type="text" class="form-control" />
-                                <button @click="saveVariant()" class="btn mt-3 btn-success">Save & Close</button>
+
                             </div>
                             <div class="col-lg-5">
                                 <input placeholder="payload e.g. payload a" v-model="selectedVariant.payload" type="text" class="form-control" />
@@ -79,43 +80,109 @@
                                 <tr v-for="(value, key) in flags[selectedFlag.name].variations" :key="key">
                                     <td>{{key}}</td>
                                     <td>{{value.payload}}</td>
-
                                 </tr>
                             </tbody>
                         </table>
-
                     </div>
                 </div>
             </div>
 
             <div v-if="isManageVariants" class="col-lg-12 mt-5">
                 <h5><b>RULE BASED ALLOCATION</b></h5>
-                <div class="row">
-                    <div class="col-lg-4">
-                        <input placeholder="key e.g. var-a" v-model="selectedRule.query" type="text" class="form-control" />
+                <h6 class="mt-3">Segmentation</h6>
+                <span>Cohort and User ID assignment will be OR operation</span>
+                <div class="row mt-3">
+                    <div class="col-lg-3">
+                        <input placeholder="cohort (e.g. xyz,abc)" v-model="selectedRule.cohort" type="text" class="form-control" />
                     </div>
-                    <div class="col-lg-8">
+                    <div class="col-lg-3">
+                        <input placeholder="user ID (e.g. 123,434)" v-model="selectedRule.uid" type="text" class="form-control" />
+                    </div>
+                    <div class="col-lg-6">
                         <div v-for="(value, key) in flags[selectedFlag.name].variations" :key="key" class="row mb-3">
                             <div class="col-lg-6">
                                 <input disabled v-model="key" class="form-control" />
                             </div>
                             <div class="col-lg-6">
-                                <input placeholder="percentage" type="number" v-model="selectedRule.percentage[key]" class="form-control" />
+                                <input placeholder="percentage" v-model.number="selectedRule.percentage[key]" class="form-control" />
                             </div>
                         </div>
-                        <button @click="addRule()" class="btn mt-3 btn-primary pull-right">Save</button>
-
+                    </div>
+                    <div class="col-lg-12 mt-3">
+                        <h6>All Other User</h6>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <input value="The rest of users outside the segmentation" disabled class="form-control" />
+                            </div>
+                            <div class="col-lg-6">
+                                <div v-for="(value, key) in flags[selectedFlag.name].variations" :key="key" class="row mb-3">
+                                    <div class="col-lg-6">
+                                        <input disabled v-model="key" class="form-control" />
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <input placeholder="percentage" v-model.number="defaultRule.percentage[key]" class="form-control" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-12">
+                        <button @click="addRule()" class="btn mt-3 btn-primary pull-right">Add</button>
+                        <button @click="saveVariant()" class="btn mt-3 btn-success">Save & Close</button>
+                    </div>
+                    <div class="col-lg-12 mt-1">
+                        <table class="table table-bordered table-stripped mt-3">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Query / Rule</th>
+                                    <th scope="col">Assignment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(value, key) in flags[selectedFlag.name].targeting" :key="key">
+                                    <td>{{value.query}}</td>
+                                    <td>{{value.percentage}}</td>
+                                </tr>
+                                <tr v-if="flags[selectedFlag.name].defaultRule">
+                                    <td>Default Rule</td>
+                                    <td>{{flags[selectedFlag.name].defaultRule.percentage}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
 
         </div>
 
 
         <!-- Generated YAML section -->
-        <div class="mt-5">
-            <h2>Generated YAML:</h2>
-            <pre class="bg-light p-3">{{ generatedYAML }}</pre>
+        <div class="mt-5 row">
+            <div class="col-lg-6">
+                <h5 class="mb-3"><b>GENERATED YAML</b></h>
+                    <pre class="bg-light p-3 mt-3">{{ generatedYAML }}</pre>
+            </div>
+            <div class="col-lg-6">
+                <h5 class="mb-3"><b>GENERATED JSON</b></h>
+                    <pre class="bg-light p-3 mt-3">{{ flags}}</pre>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-lg-12">
+                <h5><b>TEST USER</b></h5>
+            </div>
+            <div class="col-lg-4">
+                <input placeholder="user id " v-model="testUserID" type="text" class="form-control" />
+            </div>
+            <div class="col-lg-2">
+
+                <button @click="fetchUser()" class="btn btn-info">Fetch</button>
+            </div>
+            <div class="col-lg-6">
+                <pre class="bg-light p-3">{{userAssignment}}</pre>
+            </div>
         </div>
     </div>
 
@@ -147,8 +214,17 @@
 
                     selectedRule: {
                         query: "",
+                        cohort: "",
+                        uid: "",
                         percentage: {},
-                    }
+                    },
+
+                    defaultRule: {
+                        percentage: {},
+                    },
+
+                    testUserID: "",
+                    userAssignment: {}
                 };
             },
             computed: {
@@ -189,6 +265,7 @@
                 },
 
                 saveVariant() {
+                    this.writeYaml()
                     this.isManageVariants = false
                     this.resetFlagData()
                     this.resetVariantData()
@@ -203,12 +280,80 @@
                     )
                     this.resetVariantData()
 
-
                 },
-                addRule() {
-                    this.flags[this.selectedFlag.name].targeting.push(this.selectedRule)
 
-                }
+                resetRuleData() {
+                    this.selectedRule = {
+                        query: "",
+                        cohort: "",
+                        uid: "",
+                        percentage: {},
+                    }
+                },
+
+                formatter(cohort, key) {
+                    let output = "";
+                    if (cohort !== "") {
+                        output += `cohort in ["${cohort.split(",").join('","')}"]`;
+                    }
+                    if (cohort !== "" && key !== "") {
+                        output += " or ";
+                    }
+                    if (key !== "") {
+                        output += `key in ["${key.split(",").join('","')}"]`;
+                    }
+                    return output;
+                },
+
+                addRule() {
+                    this.selectedRule.query = this.formatter(this.selectedRule.cohort, this.selectedRule.uid)
+                    delete this.selectedRule.cohort
+                    delete this.selectedRule.uid
+                    this.flags[this.selectedFlag.name].targeting.push(this.selectedRule)
+                    this.flags[this.selectedFlag.name].defaultRule = this.defaultRule
+                    this.resetRuleData()
+                },
+
+                async fetchUser() {
+                    try {
+                        // Make the GET request using the fetch API
+                        const response = await fetch(`http://localhost:8080/api/get?user_id=${this.testUserID}`);
+
+                        // Check if the response is successful (status code in the range 200-299)
+                        if (response.ok) {
+                            // Parse the response JSON and save it to the userAssignment variable
+                            const responseData = await response.json();
+                            this.userAssignment = responseData.data;
+                        } else {
+                            console.error('Error fetching user assignment:', response.statusText);
+                        }
+                    } catch (error) {
+                        console.error('Error fetching user assignment:', error);
+                    }
+                },
+
+                writeYaml() {
+                    // Make the POST request using the fetch API
+                    fetch('http://localhost:8080/api/writeyaml', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(this.flags),
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Success:', data);
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                },
             },
         });
     </script>
